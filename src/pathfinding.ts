@@ -1,15 +1,28 @@
 import { buildIdList } from './buildOutputs.js';
 import { NodeHeap } from './queue.js';
+import type { 
+  GraphInterface, 
+  PathfinderOptions, 
+  PathfinderResult, 
+  NodeState, 
+  AdjacencyList, 
+  EdgePropertiesArray, 
+  EdgeGeometryArray,
+  NodeToIndexLookup,
+  IndexToNodeLookup,
+  NodePool,
+  Edge
+} from './types.js';
 
-export const createPathfinder = function(options) {
+export const createPathfinder = function(this: GraphInterface, options?: PathfinderOptions) {
 
-  const adjacency_list = this.adjacency_list;
-  const reverse_adjacency_list = this.reverse_adjacency_list;
-  const edgeProperties = this._edgeProperties;
-  const edgeGeometry = this._edgeGeometry;
-  const pool = this._createNodePool();
-  const nodeToIndexLookup = this._nodeToIndexLookup;
-  const indexToNodeLookup = this._indexToNodeLookup;
+  const adjacency_list: AdjacencyList = this.adjacency_list;
+  const reverse_adjacency_list: AdjacencyList = this.reverse_adjacency_list;
+  const edgeProperties: EdgePropertiesArray = this._edgeProperties;
+  const edgeGeometry: EdgeGeometryArray = this._edgeGeometry;
+  const pool: NodePool = this._createNodePool();
+  const nodeToIndexLookup: NodeToIndexLookup = this._nodeToIndexLookup;
+  const indexToNodeLookup: IndexToNodeLookup = this._indexToNodeLookup;
 
   if (!options) {
     options = {};
@@ -20,30 +33,30 @@ export const createPathfinder = function(options) {
   };
 
   function queryContractionHierarchy(
-    start,
-    end
-  ) {
+    start: string | number,
+    end: string | number
+  ): PathfinderResult {
 
     pool.reset();
 
     const start_index = nodeToIndexLookup[String(start)];
     const end_index = nodeToIndexLookup[String(end)];
 
-    const forward_nodeState = [];
-    const backward_nodeState = [];
+    const forward_nodeState: NodeState[] = [];
+    const backward_nodeState: NodeState[] = [];
 
-    const forward_distances = {};
-    const backward_distances = {};
+    const forward_distances: { [key: number]: number } = {};
+    const backward_distances: { [key: number]: number } = {};
 
 
     let current_start = pool.createNewState({ id: start_index, dist: 0 });
     forward_nodeState[start_index] = current_start;
-    current_start.opened = 1;
+    current_start.opened = true;
     forward_distances[current_start.id] = 0;
 
     let current_end = pool.createNewState({ id: end_index, dist: 0 });
     backward_nodeState[end_index] = current_end;
-    current_end.opened = 1;
+    current_end.opened = true;
     backward_distances[current_end.id] = 0;
 
     const searchForward = doDijkstra(
@@ -65,10 +78,11 @@ export const createPathfinder = function(options) {
 
     let forward_done = false;
     let backward_done = false;
-    let sf, sb;
+    let sf: IteratorResult<NodeState>;
+    let sb: IteratorResult<NodeState>;
 
     let tentative_shortest_path = Infinity;
-    let tentative_shortest_node = null;
+    let tentative_shortest_node: number | null = null;
 
     if (start_index !== end_index) {
       do {
@@ -86,27 +100,27 @@ export const createPathfinder = function(options) {
         }
 
       } while (
-        forward_distances[sf.value.id] < tentative_shortest_path ||
-        backward_distances[sb.value.id] < tentative_shortest_path
+        (!sf!.done && forward_distances[sf!.value.id] < tentative_shortest_path) ||
+        (!sb!.done && backward_distances[sb!.value.id] < tentative_shortest_path)
       );
     }
     else {
       tentative_shortest_path = 0;
     }
 
-    let result = { total_cost: tentative_shortest_path !== Infinity ? tentative_shortest_path : 0 };
+    let result: PathfinderResult = { total_cost: tentative_shortest_path !== Infinity ? tentative_shortest_path : 0 };
 
 
-    let extra_attrs;
+    let extra_attrs: any;
 
-    if (options.ids || options.path || options.nodes || options.properties) {
+    if (options && (options.ids || options.path || options.nodes || options.properties)) {
       if (tentative_shortest_node != null) {
         // tentative_shortest_path as falsy indicates no path found.
         extra_attrs = buildIdList(options, edgeProperties, edgeGeometry, forward_nodeState, backward_nodeState, tentative_shortest_node, indexToNodeLookup, start_index);
       }
       else {
 
-        let ids, path, properties, nodes;
+        let ids: number[] | undefined, path: any, properties: any[] | undefined, nodes: any[] | undefined;
 
         // fill in object to prevent errors in the case of no path found
         if (options.ids) {
@@ -134,22 +148,22 @@ export const createPathfinder = function(options) {
     //
 
     function* doDijkstra(
-      adj,
-      current,
-      nodeState,
-      distances,
-      reverse_nodeState,
-      reverse_distances
-    ) {
+      adj: AdjacencyList,
+      current: NodeState,
+      nodeState: NodeState[],
+      distances: { [key: number]: number },
+      reverse_nodeState: NodeState[],
+      reverse_distances: { [key: number]: number }
+    ): Generator<NodeState, void, unknown> {
 
-      var openSet = new NodeHeap({
-        compare(a, b) {
+      const openSet = new (NodeHeap as any)({
+        compare(a: NodeState, b: NodeState) {
           return a.dist - b.dist;
         }
       });
 
       do {
-        (adj[current.id] || []).forEach(edge => {
+        (adj[current.id] || []).forEach((edge: Edge) => {
 
           let node = nodeState[edge.end];
           if (node === undefined) {
@@ -195,7 +209,7 @@ export const createPathfinder = function(options) {
         current = openSet.pop();
 
         if (!current) {
-          return '';
+          return;
         }
 
         yield current;

@@ -1,5 +1,14 @@
 // public API for adding edges
-export const addEdge = function(start, end, edge_properties, edge_geometry, is_undirected) {
+import type { GraphInterface, EdgeProperties, EdgeGeometry } from './types.js';
+
+export const addEdge = function(
+  this: GraphInterface,
+  start: string | number, 
+  end: string | number, 
+  edge_properties: EdgeProperties, 
+  edge_geometry?: EdgeGeometry, 
+  is_undirected?: boolean
+): void {
 
   if (this._locked) {
     throw new Error('Graph has been contracted.  No additional edges can be added.');
@@ -13,7 +22,14 @@ export const addEdge = function(start, end, edge_properties, edge_geometry, is_u
   this._addEdge(start, end, edge_properties, edge_geometry, is_undirected);
 };
 
-export const _addEdge = function(start, end, edge_properties, edge_geometry, is_undirected) {
+export const _addEdge = function(
+  this: GraphInterface,
+  start: string | number, 
+  end: string | number, 
+  edge_properties: EdgeProperties, 
+  edge_geometry?: EdgeGeometry, 
+  is_undirected?: boolean
+): void {
 
   const start_node = String(start);
   const end_node = String(end);
@@ -98,7 +114,12 @@ export const _addEdge = function(start, end, edge_properties, edge_geometry, is_
 };
 
 
-export const _addContractedEdge = function(start_index, end_index, properties) {
+export const _addContractedEdge = function(
+  this: GraphInterface,
+  start_index: number, 
+  end_index: number, 
+  properties: EdgeProperties
+): void {
 
   // geometry not applicable here
   this._currentEdgeIndex++;

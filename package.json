@@ -2,23 +2,26 @@
   "name": "contraction-hierarchy-js",
   "version": "2.0.0",
   "description": "Contraction Hierarchy",
-  "main": "index.js",
-  "module": "main.js",
+  "main": "dist/index.js",
+  "module": "dist/main.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "engines": {
     "node": ">=16.0.0"
   },
   "scripts": {
     "test": "cd test && node routing-tests.js",
-    "test:all": "npm run test:api && npm run test:regression && npm run test:performance && npm run test:legacy",
+    "test:all": "npm run test:api && npm run test:regression && npm run test:performance && npm run test:legacy && npm run test:typescript",
     "test:api": "cd test && node api-examples.test.js",
-    "test:regression": "cd test && node regression.test.js", 
+    "test:regression": "cd test && node regression.test.js",
     "test:performance": "cd test && node performance.test.js",
     "test:legacy": "npm run test",
+    "test:typescript": "cd test && node typescript-test.ts",
     "test:watch": "cd test && find . -name '*.test.js' | entr -r node /_",
     "build": "rollup -c",
+    "build:ts": "tsc",
     "prepublishOnly": "npm run build",
-    "proto": "pbf src/structure.proto > src/structure.js"
+    "proto": "pbf src/structure.proto > src/structure.ts"
   },
   "repository": {
     "type": "git",
@@ -28,7 +31,8 @@
     "contraction",
     "hierarchy",
     "dijkstra",
-    "algorithm"
+    "algorithm",
+    "typescript"
   ],
   "author": "Daniel Trone",
   "license": "MIT",
@@ -43,17 +47,22 @@
     "pbf": "^3.3.0"
   },
   "devDependencies": {
-    "ngraph.graph": "0.0.18",
-    "ngraph.path": "1.1.0",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
-    "rollup": "^4.9.6"
+    "@types/node": "^24.7.2",
+    "ngraph.graph": "0.0.18",
+    "ngraph.path": "1.1.0",
+    "rollup": "^4.9.6",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   },
   "files": [
     "src",
-    "index.js",
-    "main.js",
-    "dist"
+    "index.ts",
+    "main.ts",
+    "dist",
+    "tsconfig.json"
   ]
 }

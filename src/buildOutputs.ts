@@ -1,10 +1,23 @@
 // Helper function to reconstruct complete node sequence from edges
-function reconstructNodesFromEdges(edgeList, edgeProperties, indexToNodeLookup, startNodeIndex) {
+import type { 
+  PathfinderOptions, 
+  EdgePropertiesArray, 
+  EdgeGeometryArray, 
+  NodeState, 
+  IndexToNodeLookup 
+} from './types.js';
+
+function reconstructNodesFromEdges(
+  edgeList: number[], 
+  edgeProperties: EdgePropertiesArray, 
+  indexToNodeLookup: IndexToNodeLookup, 
+  startNodeIndex: number
+): string[] {
   if (edgeList.length === 0) {
     return [indexToNodeLookup[startNodeIndex]];
   }
   
-  const nodeSequence = [];
+  const nodeSequence: string[] = [];
   let currentNode = startNodeIndex;
   
   // Add starting node
@@ -17,14 +30,14 @@ function reconstructNodesFromEdges(edgeList, edgeProperties, indexToNodeLookup, 
     // Determine which direction we're traversing this edge
     if (currentNode === edge._start_index) {
       // Going from start to end
-      currentNode = edge._end_index;
+      currentNode = edge._end_index!;
     } else if (currentNode === edge._end_index) {
       // Going from end to start
-      currentNode = edge._start_index;
+      currentNode = edge._start_index!;
     } else {
       // Edge doesn't connect to current node - this shouldn't happen in a valid path
       // but we'll handle it gracefully by using the edge's start node
-      currentNode = edge._end_index;
+      currentNode = edge._end_index!;
     }
     
     nodeSequence.push(indexToNodeLookup[currentNode]);
@@ -33,10 +46,19 @@ function reconstructNodesFromEdges(edgeList, edgeProperties, indexToNodeLookup, 
   return nodeSequence;
 }
 
-export function buildIdList(options, edgeProperties, edgeGeometry, forward_nodeState, backward_nodeState, tentative_shortest_node, indexToNodeLookup, startNode) {
+export function buildIdList(
+  options: PathfinderOptions, 
+  edgeProperties: EdgePropertiesArray, 
+  edgeGeometry: EdgeGeometryArray, 
+  forward_nodeState: NodeState[], 
+  backward_nodeState: NodeState[], 
+  tentative_shortest_node: number, 
+  indexToNodeLookup: IndexToNodeLookup, 
+  startNode: number
+): any {
 
-  const pathway = [];
-  const node_list = [tentative_shortest_node];
+  const pathway: Array<{ id: number; direction: string }> = [];
+  const node_list: number[] = [tentative_shortest_node];
 
   let current_forward_node = forward_nodeState[tentative_shortest_node];
   let current_backward_node = backward_nodeState[tentative_shortest_node];
@@ -45,9 +67,9 @@ export function buildIdList(options, edgeProperties, edgeGeometry, forward_nodeS
   // (occasionally entire pathway may be ONLY in the backward or forward directions)
   if (current_forward_node) {
     while (current_forward_node.attrs != null) {
-      pathway.push({ id: current_forward_node.attrs, direction: 'f' });
-      node_list.push(current_forward_node.prev);
-      current_forward_node = forward_nodeState[current_forward_node.prev];
+      pathway.push({ id: current_forward_node.attrs!, direction: 'f' });
+      node_list.push(current_forward_node.prev!);
+      current_forward_node = forward_nodeState[current_forward_node.prev!];
     }
   }
 
@@ -56,9 +78,9 @@ export function buildIdList(options, edgeProperties, edgeGeometry, forward_nodeS
 
   if (current_backward_node) {
     while (current_backward_node.attrs != null) {
-      pathway.push({ id: current_backward_node.attrs, direction: 'b' });
-      node_list.push(current_backward_node.prev);
-      current_backward_node = backward_nodeState[current_backward_node.prev];
+      pathway.push({ id: current_backward_node.attrs!, direction: 'b' });
+      node_list.push(current_backward_node.prev!);
+      current_backward_node = backward_nodeState[current_backward_node.prev!];
     }
   }
 
@@ -67,27 +89,27 @@ export function buildIdList(options, edgeProperties, edgeGeometry, forward_nodeS
   const ordered = pathway.map(p => {
     const start = p.direction === 'f' ? edgeProperties[p.id]._start_index : edgeProperties[p.id]._end_index;
     const end = p.direction === 'f' ? edgeProperties[p.id]._end_index : edgeProperties[p.id]._start_index;
-    const props = [...edgeProperties[p.id]._ordered];
+    const props = [...(edgeProperties[p.id]._ordered || [])];
 
     if (node !== start) {
       props.reverse();
-      node = start;
+      node = start!;
     }
     else {
-      node = end;
+      node = end!;
     }
 
     return props;
   });
 
-  const flattened = [].concat(...ordered);
+  const flattened = ([] as number[]).concat(...ordered);
 
 
-  const ids = flattened.map(d => edgeProperties[d]._id);
+  const ids = flattened.map((d: number) => edgeProperties[d]._id);
 
 
 
-  let properties, property_list, path, nodes;
+  let properties: any, property_list: any, path: any, nodes: any;
 
 
   if (options.nodes) {
@@ -98,7 +120,7 @@ export function buildIdList(options, edgeProperties, edgeGeometry, forward_nodeS
 
   if (options.properties || options.path) {
 
-    property_list = flattened.map(f => {
+    property_list = flattened.map((f: number) => {
 
       // remove internal properties
       const { _start_index, _end_index, _ordered, ...originalProperties } = edgeProperties[f];
@@ -112,7 +134,7 @@ export function buildIdList(options, edgeProperties, edgeGeometry, forward_nodeS
 
   if (options.path) {
 
-    const features = flattened.map((f, i) => {
+    const features = flattened.map((f: number, i: number) => {
 
       return {
         "type": "Feature",

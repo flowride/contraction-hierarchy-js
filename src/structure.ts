@@ -2,12 +2,12 @@
 
 // ContractionHierarchy ========================================
 
-var ContractionHierarchy = {};
+var ContractionHierarchy: any = {};
 
-ContractionHierarchy.read = function (pbf, end) {
+ContractionHierarchy.read = function (pbf: any, end: number): any {
     return pbf.readFields(ContractionHierarchy._readField, {_locked: false, _geoJsonFlag: false, adjacency_list: [], reverse_adjacency_list: [], _nodeToIndexLookup: {}, _edgeProperties: [], _edgeGeometry: []}, end);
 };
-ContractionHierarchy._readField = function (tag, obj, pbf) {
+ContractionHierarchy._readField = function (tag: number, obj: any, pbf: any): void {
     if (tag === 1) obj._locked = pbf.readBoolean();
     else if (tag === 2) obj._geoJsonFlag = pbf.readBoolean();
     else if (tag === 3) obj.adjacency_list.push(ContractionHierarchy.AdjList.read(pbf, pbf.readVarint() + pbf.pos));
@@ -16,12 +16,12 @@ ContractionHierarchy._readField = function (tag, obj, pbf) {
     else if (tag === 6) obj._edgeProperties.push(pbf.readString());
     else if (tag === 7) obj._edgeGeometry.push(ContractionHierarchy.GeometryArray.read(pbf, pbf.readVarint() + pbf.pos));
 };
-ContractionHierarchy.write = function (obj, pbf) {
+ContractionHierarchy.write = function (obj: any, pbf: any): void {
     if (obj._locked) pbf.writeBooleanField(1, obj._locked);
     if (obj._geoJsonFlag) pbf.writeBooleanField(2, obj._geoJsonFlag);
     if (obj.adjacency_list) for (var i = 0; i < obj.adjacency_list.length; i++) pbf.writeMessage(3, ContractionHierarchy.AdjList.write, obj.adjacency_list[i]);
     if (obj.reverse_adjacency_list) for (i = 0; i < obj.reverse_adjacency_list.length; i++) pbf.writeMessage(4, ContractionHierarchy.AdjList.write, obj.reverse_adjacency_list[i]);
-    if (obj._nodeToIndexLookup) for (i in obj._nodeToIndexLookup) if (Object.prototype.hasOwnProperty.call(obj._nodeToIndexLookup, i)) pbf.writeMessage(5, ContractionHierarchy._FieldEntry5.write, { key: i, value: obj._nodeToIndexLookup[i] });
+    if (obj._nodeToIndexLookup) Object.keys(obj._nodeToIndexLookup).forEach(i => pbf.writeMessage(5, ContractionHierarchy._FieldEntry5.write, { key: i, value: obj._nodeToIndexLookup[i] }));
     if (obj._edgeProperties) for (i = 0; i < obj._edgeProperties.length; i++) pbf.writeStringField(6, obj._edgeProperties[i]);
     if (obj._edgeGeometry) for (i = 0; i < obj._edgeGeometry.length; i++) pbf.writeMessage(7, ContractionHierarchy.GeometryArray.write, obj._edgeGeometry[i]);
 };
@@ -30,15 +30,15 @@ ContractionHierarchy.write = function (obj, pbf) {
 
 ContractionHierarchy.EdgeAttrs = {};
 
-ContractionHierarchy.EdgeAttrs.read = function (pbf, end) {
+ContractionHierarchy.EdgeAttrs.read = function (pbf: any, end: number): any {
     return pbf.readFields(ContractionHierarchy.EdgeAttrs._readField, {end: 0, cost: 0, attrs: 0}, end);
 };
-ContractionHierarchy.EdgeAttrs._readField = function (tag, obj, pbf) {
+ContractionHierarchy.EdgeAttrs._readField = function (tag: number, obj: any, pbf: any): void {
     if (tag === 1) obj.end = pbf.readVarint();
     else if (tag === 2) obj.cost = pbf.readDouble();
     else if (tag === 3) obj.attrs = pbf.readVarint();
 };
-ContractionHierarchy.EdgeAttrs.write = function (obj, pbf) {
+ContractionHierarchy.EdgeAttrs.write = function (obj: any, pbf: any): void {
     if (obj.end) pbf.writeVarintField(1, obj.end);
     if (obj.cost) pbf.writeDoubleField(2, obj.cost);
     if (obj.attrs) pbf.writeVarintField(3, obj.attrs);
@@ -48,13 +48,13 @@ ContractionHierarchy.EdgeAttrs.write = function (obj, pbf) {
 
 ContractionHierarchy.AdjList = {};
 
-ContractionHierarchy.AdjList.read = function (pbf, end) {
+ContractionHierarchy.AdjList.read = function (pbf: any, end: number): any {
     return pbf.readFields(ContractionHierarchy.AdjList._readField, {edges: []}, end);
 };
-ContractionHierarchy.AdjList._readField = function (tag, obj, pbf) {
+ContractionHierarchy.AdjList._readField = function (tag: number, obj: any, pbf: any): void {
     if (tag === 1) obj.edges.push(ContractionHierarchy.EdgeAttrs.read(pbf, pbf.readVarint() + pbf.pos));
 };
-ContractionHierarchy.AdjList.write = function (obj, pbf) {
+ContractionHierarchy.AdjList.write = function (obj: any, pbf: any): void {
     if (obj.edges) for (var i = 0; i < obj.edges.length; i++) pbf.writeMessage(1, ContractionHierarchy.EdgeAttrs.write, obj.edges[i]);
 };
 
@@ -62,13 +62,13 @@ ContractionHierarchy.AdjList.write = function (obj, pbf) {
 
 ContractionHierarchy.LineStringAray = {};
 
-ContractionHierarchy.LineStringAray.read = function (pbf, end) {
+ContractionHierarchy.LineStringAray.read = function (pbf: any, end: number): any {
     return pbf.readFields(ContractionHierarchy.LineStringAray._readField, {coords: []}, end);
 };
-ContractionHierarchy.LineStringAray._readField = function (tag, obj, pbf) {
+ContractionHierarchy.LineStringAray._readField = function (tag: number, obj: any, pbf: any): void {
     if (tag === 1) pbf.readPackedDouble(obj.coords);
 };
-ContractionHierarchy.LineStringAray.write = function (obj, pbf) {
+ContractionHierarchy.LineStringAray.write = function (obj: any, pbf: any): void {
     if (obj.coords) pbf.writePackedDouble(1, obj.coords);
 };
 
@@ -76,13 +76,13 @@ ContractionHierarchy.LineStringAray.write = function (obj, pbf) {
 
 ContractionHierarchy.GeometryArray = {};
 
-ContractionHierarchy.GeometryArray.read = function (pbf, end) {
+ContractionHierarchy.GeometryArray.read = function (pbf: any, end: number): any {
     return pbf.readFields(ContractionHierarchy.GeometryArray._readField, {linestrings: []}, end);
 };
-ContractionHierarchy.GeometryArray._readField = function (tag, obj, pbf) {
+ContractionHierarchy.GeometryArray._readField = function (tag: number, obj: any, pbf: any): void {
     if (tag === 1) obj.linestrings.push(ContractionHierarchy.LineStringAray.read(pbf, pbf.readVarint() + pbf.pos));
 };
-ContractionHierarchy.GeometryArray.write = function (obj, pbf) {
+ContractionHierarchy.GeometryArray.write = function (obj: any, pbf: any): void {
     if (obj.linestrings) for (var i = 0; i < obj.linestrings.length; i++) pbf.writeMessage(1, ContractionHierarchy.LineStringAray.write, obj.linestrings[i]);
 };
 
@@ -90,14 +90,14 @@ ContractionHierarchy.GeometryArray.write = function (obj, pbf) {
 
 ContractionHierarchy._FieldEntry5 = {};
 
-ContractionHierarchy._FieldEntry5.read = function (pbf, end) {
+ContractionHierarchy._FieldEntry5.read = function (pbf: any, end: number): any {
     return pbf.readFields(ContractionHierarchy._FieldEntry5._readField, {key: "", value: 0}, end);
 };
-ContractionHierarchy._FieldEntry5._readField = function (tag, obj, pbf) {
+ContractionHierarchy._FieldEntry5._readField = function (tag: number, obj: any, pbf: any): void {
     if (tag === 1) obj.key = pbf.readString();
     else if (tag === 2) obj.value = pbf.readVarint();
 };
-ContractionHierarchy._FieldEntry5.write = function (obj, pbf) {
+ContractionHierarchy._FieldEntry5.write = function (obj: any, pbf: any): void {
     if (obj.key) pbf.writeStringField(1, obj.key);
     if (obj.value) pbf.writeVarintField(2, obj.value);
 };

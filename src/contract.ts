@@ -1,7 +1,19 @@
 import { NodeHeap } from './queue.js';
+import type { 
+  GraphInterface, 
+  AdjacencyList, 
+  EdgeProperties, 
+  NodePool, 
+  Edge
+} from './types.js';
 
+interface OrderNode {
+  score: number;
+  id: number;
+  heapIndex?: number;
+}
 
-export const contractGraph = function() {
+export const contractGraph = function(this: GraphInterface): void {
 
   if (this._locked) {
     throw new Error('Network has already been contracted');
@@ -16,7 +28,7 @@ export const contractGraph = function() {
   // initialize dijkstra shortcut/path finder
   const finder = this._createChShortcutter();
 
-  const getVertexScore = (v) => {
+  const getVertexScore = (v: number): number => {
     const shortcut_count = this._contract(v, true, finder); /**/
     const edge_count = (this.adjacency_list[v] || []).length;
     const edge_difference = shortcut_count - edge_count;
@@ -24,15 +36,15 @@ export const contractGraph = function() {
     return edge_difference + contracted_neighbors;
   };
 
-  const getContractedNeighborCount = (v) => {
-    return (this.adjacency_list[v] || []).reduce((acc, node) => {
-      const is_contracted = this.contracted_nodes[node.end] != null ? 1 : 0;
+  const getContractedNeighborCount = (v: number): number => {
+    return (this.adjacency_list[v] || []).reduce((acc: number, node: Edge) => {
+      const is_contracted = this.contracted_nodes![node.end] != null ? 1 : 0;
       return acc + is_contracted;
     }, 0);
   };
 
-  const nh = new NodeHeap({
-    compare(a, b) {
+  const nh = new (NodeHeap as any)({
+    compare(a: OrderNode, b: OrderNode) {
       return a.score - b.score;
     }
   });
@@ -43,7 +55,7 @@ export const contractGraph = function() {
   Object.keys(this._nodeToIndexLookup).forEach(key => {
     const index = this._nodeToIndexLookup[key];
     const score = getVertexScore(index);
-    const node = new OrderNode(score, index);
+    const node = new (OrderNode as any)(score, index);
     nh.push(node);
   });
 
@@ -94,7 +106,7 @@ export const contractGraph = function() {
     this._contract(v.id, false, finder);
 
     // keep a record of contraction level of each node
-    this.contracted_nodes[v.id] = contraction_level;
+    this.contracted_nodes![v.id] = contraction_level;
     contraction_level++;
 
   }
@@ -114,7 +126,7 @@ export const contractGraph = function() {
 
 // do as much edge arrangement as possible ahead of times so that the cost is
 // not incurred at runtime
-export const _arrangeContractedPaths = function(adj_list) {
+export const _arrangeContractedPaths = function(this: GraphInterface, adj_list: AdjacencyList): void {
 
   adj_list.forEach((node, index) => {
 
@@ -122,13 +134,13 @@ export const _arrangeContractedPaths = function(adj_list) {
 
       const start_node = index;
 
-      let simpleIds = [];
-      let ids = [];
+      let simpleIds: number[] = [];
+      let ids: number[] = [];
 
       ids = [edge.attrs]; // edge.attrs is an edge ID
 
       while (ids.length) {
-        const id = ids.pop();
+        const id = ids.pop()!;
         if (id <= this._maxUncontractedEdgeIndex) {
           // this is an original network edge
           simpleIds.push(id);
@@ -136,17 +148,22 @@ export const _arrangeContractedPaths = function(adj_list) {
         else {
           // these are shorcut edges (added during contraction process)
           // where _id is an array of two items: edges of [u to v, v to w]
-          ids.push(...this._edgeProperties[id]._id);
+          const edgeId = this._edgeProperties[id]._id!;
+          if (Array.isArray(edgeId)) {
+            ids.push(...edgeId);
+          } else {
+            ids.push(edgeId);
+          }
         }
       }
 
 
       //  now with simpleIds, get start and end index and make connection object
-      const links = {};
+      const links: { [key: number]: number[] } = {};
       simpleIds.forEach(id => {
         const properties = this._edgeProperties[id];
-        const start_index = properties._start_index;
-        const end_index = properties._end_index;
+        const start_index = properties._start_index!;
+        const end_index = properties._end_index!;
 
         if (!links[start_index]) {
           links[start_index] = [id];
@@ -163,11 +180,11 @@ export const _arrangeContractedPaths = function(adj_list) {
         }
       });
 
-      const ordered = [];
+      const ordered: number[] = [];
 
       let last_node = String(start_node);
 
-      let current_edge_id = links[last_node][0];
+      let current_edge_id = links[Number(last_node)][0];
       // this value represents the attribute id of the first segment
 
       while (current_edge_id != null) {
@@ -188,7 +205,7 @@ export const _arrangeContractedPaths = function(adj_list) {
 
         last_node = next_node;
 
-        const arr = links[next_node];
+        const arr = links[Number(next_node)];
         // receive an array of 2 attribute segments.  
         // we've already seen one of them, so grab the other
 
@@ -212,17 +229,17 @@ export const _arrangeContractedPaths = function(adj_list) {
 
 };
 
-export const _cleanAdjList = function(adj_list) {
+export const _cleanAdjList = function(this: GraphInterface, adj_list: AdjacencyList): void {
 
   // remove links to lower ranked nodes
   adj_list.forEach((node, node_id) => {
-    const from_rank = this.contracted_nodes[node_id];
+    const from_rank = this.contracted_nodes![node_id];
     if (from_rank == null) {
       return;
     }
     adj_list[node_id] = adj_list[node_id].filter(
       edge => {
-        const to_rank = this.contracted_nodes[edge.end];
+        const to_rank = this.contracted_nodes![edge.end];
         if (to_rank == null) {
           return true;
         }
@@ -236,29 +253,34 @@ export const _cleanAdjList = function(adj_list) {
 // this function is multi-use:  actually contract a node  OR
 // with `get_count_only = true` find number of shortcuts added
 // if node were to be contracted
-export const _contract = function(v, get_count_only, finder) {
+export const _contract = function(
+  this: GraphInterface, 
+  v: number, 
+  get_count_only: boolean, 
+  finder: any
+): number {
 
   // all edges from anywhere to v
-  const from_connections = (this.reverse_adjacency_list[v] || []).filter(c => {
-    return !this.contracted_nodes[c.end];
+  const from_connections = (this.reverse_adjacency_list[v] || []).filter((c: Edge) => {
+    return !this.contracted_nodes![c.end];
   });
 
 
   // all edges from v to somewhere else
-  const to_connections = (this.adjacency_list[v] || []).filter(c => {
-    return !this.contracted_nodes[c.end];
+  const to_connections = (this.adjacency_list[v] || []).filter((c: Edge) => {
+    return !this.contracted_nodes![c.end];
   });
 
   let shortcut_count = 0;
 
-  from_connections.forEach(u => {
+  from_connections.forEach((u: Edge) => {
 
     let max_total = 0;
 
     // dist u to v
     const dist1 = u.cost;
 
-    to_connections.forEach(w => {
+    to_connections.forEach((w: Edge) => {
 
       // ignore node to itself
       if (u.end === w.end) {
@@ -289,7 +311,7 @@ export const _contract = function(v, get_count_only, finder) {
       max_total
     );
 
-    to_connections.forEach(w => {
+    to_connections.forEach((w: Edge) => {
       if (u.end === w.end) {
         return;
       }
@@ -306,7 +328,7 @@ export const _contract = function(v, get_count_only, finder) {
 
         if (!get_count_only) {
 
-          const props = {
+          const props: EdgeProperties = {
             _cost: total,
             _id: [u.attrs, w.attrs],
             _start_index: u.end,
@@ -327,57 +349,63 @@ export const _contract = function(v, get_count_only, finder) {
 
 
 // node containing contraction order score
-function OrderNode(score, id) {
-  this.score = score;
-  this.id = id;
+class OrderNode {
+  score: number;
+  id: number;
+  heapIndex?: number;
+
+  constructor(score: number, id: number) {
+    this.score = score;
+    this.id = id;
+  }
 }
 
-export const _createChShortcutter = function() {
+export const _createChShortcutter = function(this: GraphInterface): any {
 
-  const pool = this._createNodePool();
-  const adjacency_list = this.adjacency_list;
+  const pool: NodePool = this._createNodePool();
+  const adjacency_list: AdjacencyList = this.adjacency_list;
 
   return {
     runDijkstra
   };
 
   function runDijkstra(
-    start_index,
-    end_index,
-    vertex,
-    total
-  ) {
+    start_index: number,
+    end_index: number | null,
+    vertex: number,
+    total: number
+  ): { distances: { [key: number]: number }; nodeState: any[] } {
 
     pool.reset();
 
-    const nodeState = [];
-    const distances = {};
+    const nodeState: any[] = [];
+    const distances: { [key: number]: number } = {};
 
-    var openSet = new NodeHeap({
-      compare(a, b) {
+    const openSet = new (NodeHeap as any)({
+      compare(a: any, b: any) {
         return a.dist - b.dist;
       }
     });
 
     let current = pool.createNewState({ id: start_index, dist: 0 });
     nodeState[start_index] = current;
-    current.opened = 1;
+    current.opened = true;
     distances[current.id] = 0;
 
     // quick exit for start === end	
     if (start_index === end_index) {
-      current = '';
+      current = null as any;
     }
 
     while (current) {
 
       (adjacency_list[current.id] || [])
-      .filter(edge => {
+      .filter((edge: Edge) => {
           // this is a modification for contraction hierarchy
           // otherwise vertex===undefined
           return edge.end !== vertex;
         })
-        .forEach(edge => {
+        .forEach((edge: Edge) => {
 
           let node = nodeState[edge.end];
           if (node === undefined) {
@@ -415,12 +443,12 @@ export const _createChShortcutter = function() {
 
       // exit early if current node becomes end node
       if (current && (current.id === end_index)) {
-        current = '';
+        current = null as any;
       }
 
       // stopping condition
       if (settled_amt > total) {
-        current = '';
+        current = null as any;
       }
     }
 

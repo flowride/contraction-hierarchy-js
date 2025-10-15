@@ -1,7 +1,8 @@
 import { ContractionHierarchy as CH } from './structure.js';
 import Pbf from 'pbf';
+import type { GraphInterface, ContractionHierarchyData } from './types.js';
 
-export const loadCH = function(ch) {
+export const loadCH = function(this: GraphInterface, ch: string | ContractionHierarchyData): void {
   const parsed = (typeof ch === 'object') ? ch : JSON.parse(ch);
   this._locked = parsed._locked;
   this._geoJsonFlag = parsed._geoJsonFlag;
@@ -12,7 +13,7 @@ export const loadCH = function(ch) {
   this._edgeGeometry = parsed._edgeGeometry;
 };
 
-export const saveCH = function() {
+export const saveCH = function(this: GraphInterface): string {
 
   if (!this._locked) {
     throw new Error('No sense in saving network before it is contracted.');
@@ -30,27 +31,27 @@ export const saveCH = function() {
 };
 
 
-export const loadPbfCH = function(buffer) {
+export const loadPbfCH = function(this: GraphInterface, buffer: ArrayBuffer): void {
 
-  var readpbf = new Pbf(buffer);
-  var obj = CH.read(readpbf);
+  const readpbf = new Pbf(buffer);
+  const obj = CH.read(readpbf);
 
   // back to graph compatible structure
-  obj.adjacency_list = obj.adjacency_list.map(list => {
+  obj.adjacency_list = obj.adjacency_list.map((list: any) => {
     return list.edges;
   });
 
-  obj.reverse_adjacency_list = obj.reverse_adjacency_list.map(list => {
+  obj.reverse_adjacency_list = obj.reverse_adjacency_list.map((list: any) => {
     return list.edges;
   });
 
-  obj._edgeGeometry = obj._edgeGeometry.map(l => {
-    return l.linestrings.map(c => {
+  obj._edgeGeometry = obj._edgeGeometry.map((l: any) => {
+    return l.linestrings.map((c: any) => {
       return c.coords;
     });
   });
 
-  obj._edgeProperties = obj._edgeProperties.map(props => {
+  obj._edgeProperties = obj._edgeProperties.map((props: string) => {
     return JSON.parse(props);
   });
 
@@ -73,14 +74,14 @@ export const loadPbfCH = function(buffer) {
 
 };
 
-export const savePbfCH = async function(path) {
+export const savePbfCH = async function(this: GraphInterface, path: string): Promise<void> {
 
   if (!this._locked) {
     throw new Error('No sense in saving network before it is contracted.');
   }
 
   // Check if we're in Node.js environment
-  let fs;
+  let fs: any;
   try {
     // Use dynamic import for ES modules
     fs = await import('fs');
@@ -89,7 +90,7 @@ export const savePbfCH = async function(path) {
     return;
   }
 
-  const data = {
+  const data: any = {
     _locked: this._locked,
     _geoJsonFlag: this._geoJsonFlag,
     adjacency_list: this.adjacency_list,
@@ -101,40 +102,40 @@ export const savePbfCH = async function(path) {
 
   // convert to protobuf compatible
 
-  data.adjacency_list = data.adjacency_list.map(list => {
+  data.adjacency_list = data.adjacency_list.map((list: any) => {
     return {
-      edges: list.map(edge => {
+      edges: list.map((edge: any) => {
         return edge;
       })
     };
   });
 
-  data.reverse_adjacency_list = data.reverse_adjacency_list.map(list => {
+  data.reverse_adjacency_list = data.reverse_adjacency_list.map((list: any) => {
     return {
-      edges: list.map(edge => {
+      edges: list.map((edge: any) => {
         return edge;
       })
     };
   });
 
-  data._edgeGeometry = data._edgeGeometry.map(linestring => {
+  data._edgeGeometry = data._edgeGeometry.map((linestring: any) => {
     return {
-      linestrings: linestring.map(coords => {
+      linestrings: linestring.map((coords: any) => {
         return { coords };
       })
     };
   });
 
   // a poor solution.  seek a better way to serialize arbitrary properties
-  data._edgeProperties = data._edgeProperties.map(props => {
+  data._edgeProperties = data._edgeProperties.map((props: any) => {
     return JSON.stringify(props);
   });
 
   // write
-  var pbf = new Pbf();
+  const pbf = new Pbf();
   CH.write(data, pbf);
 
-  var buffer = pbf.finish();
+  const buffer = pbf.finish();
 
   fs.writeFileSync(path, buffer);
 

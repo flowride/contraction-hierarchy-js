@@ -1,6 +1,7 @@
 import clone from 'nanoclone';
+import type { GraphInterface, GeoJSONNetwork, GeoJSONFeature } from './types.js';
 
-export const _loadFromGeoJson = function(filedata) {
+export const _loadFromGeoJson = function(this: GraphInterface, filedata: GeoJSONNetwork): void {
 
   if (this._locked) {
     throw new Error('Cannot add GeoJSON to a contracted network');
@@ -36,10 +37,10 @@ export const _loadFromGeoJson = function(filedata) {
     const end_vertex = coordinates[coordinates.length - 1];
 
     // add forward
-    this._addEdge(start_vertex, end_vertex, properties, clone(coordinates));
+    this._addEdge(start_vertex.join(','), end_vertex.join(','), properties, clone(coordinates) as number[][]);
 
     // add backward
-    this._addEdge(end_vertex, start_vertex, properties, clone(coordinates).reverse());
+    this._addEdge(end_vertex.join(','), start_vertex.join(','), properties, (clone(coordinates) as number[][]).reverse());
 
   });
 
@@ -50,10 +51,10 @@ export const _loadFromGeoJson = function(filedata) {
 };
 
 
-export const _cleanseGeoJsonNetwork = function(file) {
+export const _cleanseGeoJsonNetwork = function(this: GraphInterface, file: GeoJSONNetwork): GeoJSONFeature[] {
 
   // get rid of duplicate edges (same origin to dest)
-  const inventory = {};
+  const inventory: { [key: string]: GeoJSONFeature } = {};
 
   const features = file.features;
 
